@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+passlib[bcrypt]
+python-jose
+sqlalchemy>=2.0
+greenlet
+
