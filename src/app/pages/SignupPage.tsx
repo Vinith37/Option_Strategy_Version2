@@ -70,15 +70,18 @@ export function SignupPage() {
 
     setIsLoading(true);
 
-    const success = await signup(name, email, password);
+    try {
+  const success = await signup(name, email, password);
 
-    setIsLoading(false);
+  if (success) {
+    navigate('/dashboard');
+  } else {
+    setErrors({ general: 'Signup failed. Please try again.' });
+  }
+} catch (err: any) {
+  setErrors({ general: err.message || 'Server error' });
+}
 
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setErrors({ general: 'An account with this email already exists' });
-    }
   };
 
   return (

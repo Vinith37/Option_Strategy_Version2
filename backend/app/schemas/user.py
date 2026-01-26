@@ -4,60 +4,23 @@ from app.api.auth import AsyncSession
 from app.models.user import User
 from sqlalchemy import select
 from app.core.security import hash_password, verify_password
+from pydantic import StringConstraints
+from typing_extensions import Annotated
 
 router = APIRouter()
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, constr
 
 class Register(BaseModel):
+    name: str
     email: EmailStr
-    password: str
+    password: Annotated[str, StringConstraints(min_length=6, max_length=64)]
 
 class Login(BaseModel):
+    name: str
     email: EmailStr
     password: str
 
-@router.post("/register")
-async def register(user: Register, db: AsyncSession = Depends(get_db)):
-
-    result = await db.execute(
-        select(User).where(User.email == user.email)
-    )
-    existing_user = result.scalar_one_or_none()
-
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
-
-    new_user = User(
-        email=user.email,
-        hashed_password=hash_password(user.password)
-    )
-
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-
-    return {"message": "User registered successfully"}
-
-@router.post("/login")
-async def login(user: Login, db: AsyncSession = Depends(get_db)):
-
-    result = await db.execute(
-        select(User).where(User.email == user.email)
-    )
-    db_user = result.scalar_one_or_none()
-
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    if not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    token = create_access_token({"sub": str(db_user.id)})
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
-
-
+class UserResponse(BaseModel):
+    id: str
+    email: EmailStr

@@ -2,9 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 interface User {
   id: string;
-  name: string;
   email: string;
-  avatar?: string;
 }
 
 interface AuthContextType {
@@ -17,80 +15,75 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const API_URL = 'http://127.0.0.1:8000'; // later move to env
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Restore session from token
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    fetch(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data) setUser(data);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock login - in real app, this would call an API
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Check if user exists in localStorage users
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const foundUser = users.find((u: any) => u.email === email && u.password === password);
-
-      if (foundUser) {
-        const { password: _, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      return false;
-    }
-  };
-
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    const res = await fetch("http://127.0.0.1:8000/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
 
-      // Check if user already exists
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const userExists = users.find((u: any) => u.email === email);
-
-      if (userExists) {
-        return false;
-      }
-
-      // Create new user
-      const newUser = {
-        id: Math.random().toString(36).substring(7),
-        name,
-        email,
-        password,
-        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${name}`
-      };
-
-      users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
-
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-
-      return true;
-    } catch (error) {
-      return false;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Signup failed');
     }
-  };
+
+    const user = await res.json();
+    setUser(user);
+    localStorage.setItem("user", JSON.stringify(user));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+  const login = async (email: string, password: string) => {
+  const res = await fetch("http://127.0.0.1:8000/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) return false;
+
+  const user = await res.json();
+  setUser(user);
+  localStorage.setItem("user", JSON.stringify(user));
+  return true;
+};
+
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
-    localStorage.removeItem('user');
   };
 
   return (
@@ -102,8 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 }
