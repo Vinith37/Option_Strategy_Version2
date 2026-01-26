@@ -3,22 +3,18 @@ from jose import jwt, JWTError
 import os
 from datetime import datetime, timedelta
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+
 SECRET_KEY = "supersecretkey"  # move to env later
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 def hash_password(password: str) -> str:
-    # bcrypt max = 72 bytes
-    password_bytes = password.encode("utf-8")
+    # IMPORTANT: pass the raw string directly
+    return pwd_context.hash(password)
 
-    if len(password_bytes) > 72:
-        password_bytes = password_bytes[:72]
-
-    return pwd_context.hash(password_bytes.decode("utf-8", errors="ignore"))
-
-def verify_password(password: str, hashed: str):
-    return pwd_context.verify(password, hashed)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()

@@ -1,38 +1,31 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+
+const API_URL = "http://127.0.0.1:8000";
 
 interface User {
   id: string;
+  name: string;
   email: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
   isLoading: boolean;
+  signup: (name: string, email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_URL = 'http://127.0.0.1:8000'; // later move to env
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session from token
+  // Restore session on refresh
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
     fetch(`${API_URL}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
@@ -41,62 +34,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-  try {
-    const res = await fetch("http://127.0.0.1:8000/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
+  // --------------------
+  // Register
+  // --------------------
+  const signup = async (
+    name: string,
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || 'Signup failed');
+      if (!res.ok) return false;
+
+      const user: User = await res.json();
+      setUser(user);
+      return true;
+    } catch {
+      return false;
     }
+  };
 
-    const user = await res.json();
-    setUser(user);
-    localStorage.setItem("user", JSON.stringify(user));
-    return true;
-  } catch {
-    return false;
-  }
-};
+  // --------------------
+  // Login
+  // --------------------
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-  const login = async (email: string, password: string) => {
-  const res = await fetch("http://127.0.0.1:8000/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+      if (!res.ok) return false;
 
-  if (!res.ok) return false;
+      const user: User = await res.json();
+      setUser(user);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
-  const user = await res.json();
-  setUser(user);
-  localStorage.setItem("user", JSON.stringify(user));
-  return true;
-};
-
-
+  // --------------------
+  // Logout
+  // --------------------
   const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        signup,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
+// --------------------
+// Hook
+// --------------------
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used inside AuthProvider");
   }
   return context;
 }
