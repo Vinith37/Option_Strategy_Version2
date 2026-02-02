@@ -42,7 +42,7 @@ app.add_middleware(
 # Routers
 # --------------------
 app.include_router(auth.router)
-app.include_router(strategy.router)
+app.include_router(strategy.router, prefix="/api")
 app.include_router(health.router)
 
 

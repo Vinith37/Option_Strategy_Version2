@@ -39,28 +39,13 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 
-interface SavedStrategy {
-  id: string;
-  name: string;
-  type: string;
-  legs?: OptionLeg[];
-  maxProfit: number;
-  maxLoss: number;
-  underlyingPrice?: number;
-  entryDate?: string;
-  expiryDate?: string;
-  notes?: string;
-  lastUpdated: string;
-  status: 'active' | 'archived';
-}
-
 export function StrategiesPage() {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
   // Check if we're editing a strategy
-  const editingStrategy = location.state?.editingStrategy as SavedStrategy | undefined;
+  const editingStrategy = location.state?.editingStrategy as any | undefined;
   const isEditMode = !!editingStrategy;
   
   // View state
@@ -121,8 +106,13 @@ export function StrategiesPage() {
   }, [hasFuturesLeg, futuresLegs]);
   
   // Calculate payoff data based on legs
-  const calculatePayoff = () => {
-    const payoffData = [];
+  type PayoffPoint = {
+  price: number;
+  payoff: number;
+  };
+
+  const calculatePayoff = (): PayoffPoint[] => {
+    const payoffData: PayoffPoint[] = [];
     
     // Prevent calculation if price is 0 or invalid
     if (underlyingPrice <= 0) {
@@ -245,78 +235,65 @@ export function StrategiesPage() {
     setLegs(legs.filter(leg => leg.id !== id));
   };
 
-  const handleSaveStrategy = () => {
-    if (legs.length === 0) {
-      toast.error('Please add at least one leg to save the strategy');
+  const handleSaveStrategy = async () => {
+  if (legs.length === 0) {
+    toast.error("Please add at least one leg");
+    return;
+  }
+
+  if (!entryDate || !expiryDate) {
+    toast.error("Please select entry and expiry dates");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Not authenticated");
       return;
     }
 
-    // Auto-generate name if blank
-    const generateStrategyName = () => {
-      if (strategyName.trim() !== '') {
-        return strategyName.trim();
-      }
-      
-      // Auto-generate: <Strategy Type> + <Entry Date>
-      const strategyType = editingStrategy?.type || 'Custom Strategy';
-      const dateStr = entryDate 
-        ? entryDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-        : new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-      
-      return `${strategyType} ${dateStr}`;
+    const payload = {
+      name:
+        strategyName.trim() ||
+        `Custom Strategy ${new Date().toISOString().split("T")[0]}`,
+      strategy_type: editingStrategy?.strategy_type ?? "custom",
+      entry_date: entryDate.toISOString().split("T")[0],
+      expiry_date: expiryDate.toISOString().split("T")[0],
+      parameters: {
+        maxProfit,
+        maxLoss,
+        underlyingPrice,
+        priceRange,
+      },
+      custom_legs: legs.map(({ id, ...rest }) => rest),
+      notes,
     };
+    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+    const res = await fetch(
+      `${API_BASE}/api/strategies`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
-    const finalStrategyName = generateStrategyName();
-
-    if (isEditMode && editingStrategy) {
-      // Update existing strategy
-      const updatedStrategy = {
-        ...editingStrategy,
-        name: finalStrategyName,
-        legs,
-        maxProfit,
-        maxLoss,
-        underlyingPrice,
-        entryDate: entryDate?.toISOString(),
-        expiryDate: expiryDate?.toISOString(),
-        lastUpdated: new Date().toISOString().split('T')[0],
-        notes,
-      };
-
-      const userStrategies = JSON.parse(localStorage.getItem(`strategies_${user?.id}`) || '[]');
-      const updatedStrategies = userStrategies.map((s: SavedStrategy) =>
-        s.id === editingStrategy.id ? updatedStrategy : s
-      );
-      localStorage.setItem(`strategies_${user?.id}`, JSON.stringify(updatedStrategies));
-      
-      setHasUnsavedChanges(false);
-      toast.success('Strategy updated successfully!');
-      navigate('/dashboard');
-    } else {
-      // Create new strategy
-      const strategy = {
-        id: Math.random().toString(36).substring(7),
-        name: finalStrategyName,
-        type: 'custom',
-        legs,
-        maxProfit,
-        maxLoss,
-        underlyingPrice,
-        entryDate: entryDate?.toISOString(),
-        expiryDate: expiryDate?.toISOString(),
-        lastUpdated: new Date().toISOString().split('T')[0],
-        status: 'current' as const,
-        notes,
-      };
-
-      const userStrategies = JSON.parse(localStorage.getItem(`strategies_${user?.id}`) || '[]');
-      userStrategies.push(strategy);
-      localStorage.setItem(`strategies_${user?.id}`, JSON.stringify(userStrategies));
-      
-      toast.success('Strategy saved successfully!');
-      navigate('/dashboard');
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
     }
-  };
+
+    toast.success("Strategy saved successfully");
+    navigate("/dashboard");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to save strategy");
+  }
+};
 
   const handleLoadTemplate = (templateLegs: Omit<OptionLeg, 'id'>[]) => {
     const legsWithIds = templateLegs.map(leg => ({

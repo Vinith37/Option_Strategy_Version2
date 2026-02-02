@@ -22,14 +22,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on refresh
+  // 🔄 Restore session using JWT
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
     fetch(`${API_URL}/auth/me`, {
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data) setUser(data);
+        if (data) {
+          setUser(data);
+        } else {
+          localStorage.removeItem("token");
+        }
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -37,11 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // --------------------
   // Register
   // --------------------
-  const signup = async (
-    name: string,
-    email: string,
-    password: string
-  ): Promise<boolean> => {
+  const signup = async (name: string, email: string, password: string) => {
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
@@ -49,23 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, password }),
       });
 
-      if (!res.ok) return false;
-
-      const user: User = await res.json();
-      setUser(user);
-      return true;
+      return res.ok;
     } catch {
       return false;
     }
   };
 
   // --------------------
-  // Login
+  // Login (FIXED)
   // --------------------
-  const login = async (
-    email: string,
-    password: string
-  ): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
@@ -75,8 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.ok) return false;
 
-      const user: User = await res.json();
-      setUser(user);
+      const data = await res.json();
+
+      // ✅ Save token
+      localStorage.setItem("token", data.access_token);
+
+      // ✅ Save user
+      setUser(data.user);
+
       return true;
     } catch {
       return false;
@@ -87,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout
   // --------------------
   const logout = () => {
+    localStorage.removeItem("token");
     setUser(null);
   };
 
@@ -105,9 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// --------------------
-// Hook
-// --------------------
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

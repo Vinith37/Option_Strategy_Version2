@@ -52,25 +52,26 @@ export interface HistoricalSnapshot {
  * Main Strategy interface used across the application
  */
 export interface Strategy {
-  id: string;
+  id: number;
+
   name: string;
-  type: string;
-  legs?: OptionLeg[];
+  type: string;                // frontend-friendly
+  status: "current" | "active" | "completed";
+
+  entryDate?: string;
+  expiryDate?: string;
+  exitDate?: string;
+
+  legs?: any[];
+
   maxProfit: number;
   maxLoss: number;
   underlyingPrice?: number;
-  entryDate?: string;
-  expiryDate?: string;
+
   notes?: string;
-  lastUpdated: string;
-  status: 'current' | 'completed' | 'archived';
-  exitDate?: string;
+  lastUpdated?: string;
+
   actualProfit?: number;
-  
-  /**
-   * Immutable snapshot of the strategy at the moment it was completed.
-   * CRITICAL: This snapshot should NEVER be recalculated or modified.
-   * Always use this data when displaying history.
-   */
-  historicalSnapshot?: HistoricalSnapshot;
+  historicalSnapshot?: any;
 }
+

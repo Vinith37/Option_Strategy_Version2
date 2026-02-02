@@ -30,51 +30,116 @@ export function DashboardPage() {
   const [viewingStrategy, setViewingStrategy] = useState<Strategy | null>(null);
 
   useEffect(() => {
-    // Load user data from localStorage
-    const userStrategies = JSON.parse(localStorage.getItem(`strategies_${user?.id}`) || '[]');
+  if (!user) return;
 
-    setStrategies(userStrategies);
-  }, [user?.id]);
+  const loadStrategies = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-  const deleteStrategy = (id: string) => {
-    const updatedStrategies = strategies.filter(s => s.id !== id);
-    setStrategies(updatedStrategies);
-    localStorage.setItem(`strategies_${user?.id}`, JSON.stringify(updatedStrategies));
-    toast.success('Strategy deleted');
+      const res = await fetch("http://127.0.0.1:8000/api/strategies", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to load strategies");
+
+      const raw = await res.json();
+
+      const normalized: Strategy[] = raw.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        type: s.strategy_type,
+        status: s.status ?? "current",
+
+        entryDate: s.entry_date,
+        expiryDate: s.expiry_date,
+        exitDate: s.exit_date ?? null,
+
+        maxProfit: s.parameters?.maxProfit ?? 0,
+        maxLoss: s.parameters?.maxLoss ?? 0,
+
+        legs: s.custom_legs ?? [],
+        notes: s.notes ?? "",
+
+        actualProfit: s.actual_profit ?? null,
+        historicalSnapshot: s.historical_snapshot ?? null,
+
+        lastUpdated: s.updated_at,
+        underlyingPrice: s.parameters?.underlyingPrice ?? 0,
+      }));
+      /* ✅ DEBUG LOGS — ADD THESE */
+      console.log("All strategies:", normalized);
+      console.log(
+        "Current strategies:",
+        normalized.filter(s => s.status === "current")
+      );
+      setStrategies(normalized);
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load strategies");
+    }
   };
+
+  loadStrategies();
+}, [user]);
+
+  const deleteStrategy = async (id: number) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/strategies/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+    if (!res.ok) throw new Error("Delete failed");
+
+    setStrategies(prev => prev.filter(s => s.id !== id));
+    toast.success("Strategy deleted");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to delete strategy");
+  }
+};
+
 
   const handleExitTrade = (strategy: Strategy) => {
     setExitingStrategy(strategy);
   };
 
-  const confirmExitTrade = () => {
-    if (!exitingStrategy) return;
+  const confirmExitTrade = async () => {
+  if (!exitingStrategy) return;
 
-    // For now, calculate P&L assuming all positions are closed at current underlying price
-    // In a real app, you would prompt for actual exit prices for each leg
+  try {
+    const token = localStorage.getItem("token");
+
     const legs = (exitingStrategy.legs || []) as OptionLeg[];
     const underlyingPrice = exitingStrategy.underlyingPrice || 0;
-    
-    // Set exit prices based on current underlying price
+
     const legsWithExit = legs.map(leg => {
       if (leg.instrumentType === 'fut') {
-        // For futures, use underlying price as exit price
         return { ...leg, exitPrice: underlyingPrice.toString() };
       } else {
-        // For options, use intrinsic value as exit premium
         const strike = parseFloat(leg.strike || '0');
-        const intrinsicValue = leg.instrumentType === 'call'
-          ? Math.max(0, underlyingPrice - strike)
-          : Math.max(0, strike - underlyingPrice);
+        const intrinsicValue =
+          leg.instrumentType === 'call'
+            ? Math.max(0, underlyingPrice - strike)
+            : Math.max(0, strike - underlyingPrice);
+
         return { ...leg, exitPremium: intrinsicValue.toString() };
       }
     });
 
-    // Calculate actual profit/loss based on exit prices
     const actualPnL = calculateTotalRealizedPnL(legsWithExit) || 0;
-
-    // CRITICAL: Create immutable snapshot before saving
     const exitDate = new Date().toISOString().split('T')[0];
+
     const historicalSnapshot = createHistoricalSnapshot(
       legsWithExit,
       exitingStrategy.entryDate,
@@ -83,26 +148,50 @@ export function DashboardPage() {
       exitingStrategy.notes
     );
 
-    const updatedStrategy: Strategy = {
-      ...exitingStrategy,
-      legs: legsWithExit,
-      status: 'completed',
-      exitDate,
-      actualProfit: actualPnL,
-      historicalSnapshot, // Save the immutable snapshot
-    };
-
-    const updatedStrategies = strategies.map(s =>
-      s.id === exitingStrategy.id ? updatedStrategy : s
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/strategies/${exitingStrategy.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: "completed",
+          exit_date: exitDate,
+          actual_profit: actualPnL,
+          custom_legs: legsWithExit,
+          historical_snapshot: historicalSnapshot,
+        }),
+      }
     );
 
-    setStrategies(updatedStrategies);
-    localStorage.setItem(`strategies_${user?.id}`, JSON.stringify(updatedStrategies));
-    
+    if (!res.ok) throw new Error("Exit failed");
+
+    // Update UI state
+    setStrategies(prev =>
+      prev.map(s =>
+        s.id === exitingStrategy.id
+          ? {
+              ...s,
+              status: "completed",
+              exitDate,
+              actualProfit: actualPnL,
+              legs: legsWithExit,
+              historicalSnapshot,
+            }
+          : s
+      )
+    );
+
     setExitingStrategy(null);
-    toast.success('Trade exited successfully');
-    setActiveTab('history');
-  };
+    setActiveTab("history");
+    toast.success("Trade exited successfully");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to exit trade");
+  }
+};
 
   const handleViewStrategy = (strategy: Strategy) => {
     setViewingStrategy(strategy);

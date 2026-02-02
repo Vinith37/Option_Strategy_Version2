@@ -1,14 +1,51 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from datetime import datetime
+
 from app.core.database import get_db
+from app.api.deps import get_current_user
+from app.models.strategy import Strategy
+from app.models.user import User
+from app.schemas.strategy import StrategyCreate, StrategyResponse
 
 router = APIRouter()
 
-@router.post("/")
-async def save_strategy(payload: dict, db: AsyncSession = Depends(get_db)):
-    # save JSON strategy
-    return {"status": "saved"}
+@router.post("/strategies", response_model=StrategyResponse, status_code=status.HTTP_201_CREATED)
+async def create_strategy(
+    strategy: StrategyCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    
+    new_strategy = Strategy(
+        user_id=current_user.id,
+        name=strategy.name,
+        strategy_type=strategy.strategy_type,
+        entry_date=datetime.fromisoformat(strategy.entry_date).date(),
+        expiry_date=datetime.fromisoformat(strategy.expiry_date).date(),
+        parameters=strategy.parameters or {},
+        custom_legs=strategy.custom_legs or [],
+        notes=strategy.notes,
+        status="current",
+        config={
+            "parameters": strategy.parameters or {},
+            "custom_legs": strategy.custom_legs or [],
+        },
+    )
 
-@router.get("/")
-async def list_strategies():
-    return []
+    db.add(new_strategy)
+    await db.commit()
+    await db.refresh(new_strategy)
+
+    return new_strategy
+
+@router.get("/strategies", response_model=list[StrategyResponse])
+async def list_strategies(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Strategy).where(Strategy.user_id == current_user.id)
+    )
+    return result.scalars().all()
