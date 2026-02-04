@@ -38,6 +38,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 
 export function StrategiesPage() {
   const { user } = useAuth();
@@ -269,9 +270,8 @@ export function StrategiesPage() {
       custom_legs: legs.map(({ id, ...rest }) => rest),
       notes,
     };
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
     const res = await fetch(
-      `${API_BASE}/api/strategies`,
+      `${API_BASE_URL}/api/strategies`,
       {
         method: "POST",
         headers: {

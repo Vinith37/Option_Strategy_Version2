@@ -20,6 +20,7 @@ import { OptionLeg } from '../components/LegCard';
 import { calculateTotalRealizedPnL } from '../utils/calculateLegPnL';
 import { Strategy } from '../types/strategy';
 import { createHistoricalSnapshot, getHistoricalPnL } from '../utils/createHistoricalSnapshot';
+import { API_BASE_URL } from '../utils/api';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export function DashboardPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://127.0.0.1:8000/api/strategies", {
+      const res = await fetch(`${API_BASE_URL}/api/strategies`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -89,15 +90,12 @@ export function DashboardPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/strategies/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/strategies/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
     if (!res.ok) throw new Error("Delete failed");
 
@@ -149,7 +147,7 @@ export function DashboardPage() {
     );
 
     const res = await fetch(
-      `http://127.0.0.1:8000/api/strategies/${exitingStrategy.id}`,
+      `${API_BASE_URL}/api/strategies/${exitingStrategy.id}`,
       {
         method: "PATCH",
         headers: {
