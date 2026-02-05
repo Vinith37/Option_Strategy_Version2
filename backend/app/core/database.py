@@ -17,13 +17,14 @@ print(">>> DATABASE_URL USED =", DATABASE_URL)
 # SSL context for Neon
 ssl_context = ssl.create_default_context()
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    connect_args={
-        "ssl": ssl_context
-    }
-)
+engine = None
+
+def init_engine():
+    global engine
+    engine = create_async_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+    )
 
 AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
