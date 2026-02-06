@@ -1,19 +1,10 @@
-from dotenv import load_dotenv
-from pathlib import Path
-
-# --------------------
-# Load environment variables
-# --------------------
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(env_path)
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from urllib.parse import urlparse
 import os
 
 from app.api import auth, strategy, health
-from app.core.database import engine, Base
+from app.core.database import engine, Base, init_engine
 
 
 # --------------------
@@ -74,9 +65,8 @@ app.include_router(health.router)
 # --------------------
 @app.on_event("startup")
 async def on_startup():
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    except Exception as e:
-        print("Database startup failed:", e)
+    init_engine()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
