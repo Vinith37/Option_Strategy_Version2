@@ -1,11 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from urllib.parse import urlparse
 import os
 
 from app.api import auth, strategy, health
-from app.core.database import engine, Base, init_engine
-
+from app.core.database import init_engine
 
 # --------------------
 # FastAPI app
@@ -60,3 +60,16 @@ app.include_router(health.router)
 @app.on_event("startup")
 async def on_startup():
     init_engine()
+
+
+@app.options("/{path:path}")
+async def options_handler(path: str, request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "https://frontend-green-five-44.vercel.app",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
