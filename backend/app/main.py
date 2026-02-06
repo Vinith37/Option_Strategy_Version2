@@ -66,7 +66,3 @@ app.include_router(health.router)
 @app.on_event("startup")
 async def on_startup():
     init_engine()
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
