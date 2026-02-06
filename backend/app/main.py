@@ -19,19 +19,12 @@ app = FastAPI(
 # --------------------
 # CORS (React / Vite)
 # --------------------
-frontend_url = os.getenv("FRONTEND_URL", "").strip()
 allowed_origins = [
     "https://frontend-green-five-44.vercel.app",
     "http://localhost:5173",   # local dev
     "http://127.0.0.1:5173",
 ]
 
-if frontend_url:
-    parsed = urlparse(frontend_url)
-    if parsed.scheme and parsed.netloc:
-        allowed_origins.append(f"{parsed.scheme}://{parsed.netloc}")
-    else:
-        allowed_origins.append(frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
