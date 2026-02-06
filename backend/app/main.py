@@ -21,6 +21,7 @@ app = FastAPI(
 # --------------------
 frontend_url = os.getenv("FRONTEND_URL", "").strip()
 allowed_origins = [
+    "https://frontend-green-five-44.vercel.app",
     "http://localhost:5173",   # local dev
     "http://127.0.0.1:5173",
 ]
