@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://backend-r6dd.onrender.com";
 
 interface User {
   id: string;
