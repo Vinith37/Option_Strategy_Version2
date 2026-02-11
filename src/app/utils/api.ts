@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "https://backend-peach-delta-55.vercel.app";
+const DEFAULT_API_BASE_URL = "https://backend-r6dd.onrender.com";
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const normalizedBaseUrl = rawBaseUrl
