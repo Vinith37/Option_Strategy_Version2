@@ -29,7 +29,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://frontend-green-five-44.vercel.app",
+        "https://optionsstrategies.in",
+        "https://www.optionsstrategies.in",
         "http://localhost:5173",   # local dev
         "http://127.0.0.1:5173",
     ],
