@@ -20,9 +20,9 @@ ssl_context = ssl.create_default_context()
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
-    connect_args={
-        "ssl": ssl_context
-    }
+    pool_pre_ping=True,      # 🔥 IMPORTANT
+    pool_recycle=1800,       # optional but good
+    connect_args={"ssl": ssl_context}
 )
 
 AsyncSessionLocal = sessionmaker(
