@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pathlib import Path
+import os
 
 from app.api import auth, strategy, health
 from app.core.database import engine, Base
+from starlette.middleware.sessions import SessionMiddleware
 
 
 # --------------------
@@ -22,6 +24,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "dev_secret")
+)
 
 # --------------------
 # CORS (React / Vite)
