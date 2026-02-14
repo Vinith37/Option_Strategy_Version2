@@ -10,6 +10,7 @@ import { LearnPage } from './pages/LearnPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SummaryStatesDemo } from './pages/SummaryStatesDemo';
 import { Toaster } from './components/ui/sonner';
+import { OAuthSuccessPage } from './pages/oauth-success';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -78,6 +79,7 @@ function App() {
               element={<SummaryStatesDemo />}
             />
             <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/oauth-success" element={<OAuthSuccessPage />} />
           </Routes>
           <Toaster />
         </BrowserRouter>

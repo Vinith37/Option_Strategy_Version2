@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function OAuthSuccess() {
+export function OAuthSuccessPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -11,8 +11,10 @@ export default function OAuthSuccess() {
     if (token) {
       localStorage.setItem("token", token);
       navigate("/dashboard");
+    } else {
+      navigate("/login");
     }
-  }, []);
+  }, [navigate]);
 
   return <div>Signing you in...</div>;
 }
