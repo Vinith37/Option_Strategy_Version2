@@ -55,14 +55,8 @@ export function LoginPage() {
     {
       name: "Google",
       url: "https://api.optionsstrategies.in/auth/google",
-      bg: "bg-white border border-gray-300 hover:bg-gray-50",
+      bg: "bg-gray-100 hover:bg-gray-200 border",
       text: "text-gray-800",
-    },
-    {
-      name: "Apple",
-      url: "https://api.optionsstrategies.in/auth/apple",
-      bg: "bg-black hover:bg-gray-900",
-      text: "text-white",
     },
     {
       name: "Microsoft",
