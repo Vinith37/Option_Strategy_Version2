@@ -37,14 +37,10 @@ export function LoginPage() {
     e.preventDefault();
     setErrors({});
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
-
     const success = await login(email, password);
-
     setIsLoading(false);
 
     if (success) {
@@ -54,69 +50,86 @@ export function LoginPage() {
     }
   };
 
+  // 🔥 Social Providers
+  const providers = [
+    {
+      name: "Google",
+      url: "https://api.optionsstrategies.in/auth/google",
+      bg: "bg-white border border-gray-300 hover:bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      name: "Apple",
+      url: "https://api.optionsstrategies.in/auth/apple",
+      bg: "bg-black hover:bg-gray-900",
+      text: "text-white",
+    },
+    {
+      name: "Microsoft",
+      url: "https://api.optionsstrategies.in/auth/microsoft",
+      bg: "bg-blue-600 hover:bg-blue-700",
+      text: "text-white",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 transition-all duration-300">
-          {/* Logo and Title */}
-          <div className="flex flex-col items-center mb-6 sm:mb-8">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-transform duration-300 hover:scale-105">
-              <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+              <TrendingUp className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Welcome Back</h1>
-            <p className="text-sm sm:text-base text-gray-600 text-center px-4">
+            <h1 className="text-2xl font-semibold text-gray-900">Welcome Back</h1>
+            <p className="text-gray-600 text-center">
               Sign in to continue to Options Strategy Builder
             </p>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {errors.general && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
               <p className="text-sm text-red-800">{errors.general}</p>
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <Label htmlFor="email" className="text-sm text-gray-700 mb-2 block">
-                Email Address
-              </Label>
+              <Label>Email Address</Label>
               <Input
-                id="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`transition-all duration-200 ${errors.email ? 'border-red-300' : ''}`}
+                className={errors.email ? 'border-red-300' : ''}
               />
               {errors.email && (
-                <p className="text-xs text-red-600 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">{errors.email}</p>
+                <p className="text-xs text-red-600 mt-1">{errors.email}</p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-sm text-gray-700 mb-2 block">
-                Password
-              </Label>
+              <Label>Password</Label>
               <Input
-                id="password"
                 type="password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`transition-all duration-200 ${errors.password ? 'border-red-300' : ''}`}
+                className={errors.password ? 'border-red-300' : ''}
               />
               {errors.password && (
-                <p className="text-xs text-red-600 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">{errors.password}</p>
+                <p className="text-xs text-red-600 mt-1">{errors.password}</p>
               )}
             </div>
 
-            <div className="flex items-center justify-end">
+            <div className="flex justify-end">
               <button
                 type="button"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200 active:scale-95"
+                className="text-sm text-blue-600 hover:text-blue-700"
               >
                 Forgot password?
               </button>
@@ -125,37 +138,43 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 active:scale-98 h-11 sm:h-12 text-base"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 h-12"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          {/* Divider */}
-          <div className="my-5 sm:my-6 flex items-center gap-3">
+          {/* OR Divider */}
+          <div className="my-6 flex items-center gap-3">
             <div className="flex-1 h-px bg-gray-200"></div>
-            <span className="text-xs text-gray-500">OR</span>
+            <span className="text-xs text-gray-500">OR WITH</span>
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          {/* Create Account */}
-          <Button
-            variant="outline"
-            onClick={() => navigate('/signup')}
-            className="w-full transition-all duration-200 active:scale-98 h-11 sm:h-12"
-          >
-            Create New Account
-          </Button>
-        </div>
+          {/* 🔥 Social Buttons */}
+          <div className="space-y-3">
+            {providers.map((provider) => (
+              <button
+                key={provider.name}
+                onClick={() => (window.location.href = provider.url)}
+                className={`w-full py-3 rounded-lg font-medium transition ${provider.bg} ${provider.text}`}
+              >
+                Continue with {provider.name}
+              </button>
+            ))}
+          </div>
 
-        {/* Demo Credentials */}
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-100 transition-all duration-300 hover:shadow-md">
-          <p className="text-xs text-blue-800 mb-2 font-medium">Demo Credentials:</p>
-          <p className="text-xs text-blue-700">Email: demo@example.com</p>
-          <p className="text-xs text-blue-700">Password: demo123</p>
-          <p className="text-xs text-blue-600 mt-2 italic">
-            Or create a new account to get started
-          </p>
+          {/* Register */}
+          <div className="mt-6 text-center text-sm">
+            Don’t have account?{" "}
+            <span
+              onClick={() => navigate('/signup')}
+              className="text-blue-600 cursor-pointer font-medium"
+            >
+              Register
+            </span>
+          </div>
+
         </div>
       </div>
     </div>

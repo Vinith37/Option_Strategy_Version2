@@ -10,7 +10,6 @@ import { LearnPage } from './pages/LearnPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SummaryStatesDemo } from './pages/SummaryStatesDemo';
 import { Toaster } from './components/ui/sonner';
-import AuthPage from './pages/AuthPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -24,7 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -40,7 +39,6 @@ function App() {
       <SidebarProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/auth" element={<AuthPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route

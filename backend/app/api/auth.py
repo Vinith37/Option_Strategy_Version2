@@ -1,8 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from fastapi import Request
+from fastapi.responses import RedirectResponse
+from app.core.oauth import oauth
+import os
+from app.core.security import create_access_token
 
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.core.security import (
     hash_password,
     verify_password,
@@ -98,3 +103,39 @@ async def login(
             "name": user.name,
         },
     }
+
+@router.get("/auth/google")
+async def login_google(request: Request):
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@router.get("/auth/google/callback")
+async def google_callback(request: Request):
+    token = await oauth.google.authorize_access_token(request)
+    user_info = token.get("userinfo")
+
+    email = user_info["email"]
+    name = user_info.get("name")
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(User).where(User.email == email)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                email=email,
+                name=name,
+                hashed_password=""  # OAuth users don't need password
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+
+    jwt_token = create_access_token({"sub": str(user.id)})
+
+    frontend_url = os.getenv("FRONTEND_URL")
+    return RedirectResponse(
+        url=f"{frontend_url}/oauth-success?token={jwt_token}"
+    )
