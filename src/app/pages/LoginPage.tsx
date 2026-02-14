@@ -56,7 +56,7 @@ export function LoginPage() {
       name: "Google",
       url: "https://api.optionsstrategies.in/auth/google",
       bg: "bg-black hover:bg-gray-900",
-      text: "text-gray-800",
+      text: "text-white",
     },
     {
       name: "Microsoft",
