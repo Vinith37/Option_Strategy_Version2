@@ -104,12 +104,12 @@ async def login(
         },
     }
 
-@router.get("/auth/google")
+@router.get("/google")
 async def login_google(request: Request):
     redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@router.get("/auth/google/callback")
+@router.get("/google/callback")
 async def google_callback(request: Request):
     token = await oauth.google.authorize_access_token(request)
     user_info = token.get("userinfo")
